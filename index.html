@@ -97,6 +97,35 @@
             box-shadow: 0 8px 32px rgba(0, 0, 0, 0.35);
         }
 
+        /* ── Auth block ───────────────── */
+        .auth-warning {
+            background: #2a1f1a;
+            border: 1px solid #b8884e;
+            border-radius: var(--radius-sm);
+            padding: 16px;
+            color: #e0b87a;
+            font-size: 0.9rem;
+            text-align: center;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 12px;
+            flex-wrap: wrap;
+        }
+        .auth-warning button {
+            background: var(--accent2);
+            color: #0d0f13;
+            border: none;
+            padding: 10px 24px;
+            border-radius: 6px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: background 0.2s;
+        }
+        .auth-warning button:hover {
+            background: #c9944a;
+        }
+
         /* ── Model selector ───────────── */
         .model-row {
             display: flex;
@@ -204,7 +233,7 @@
             color: #0d0f13;
             border-color: var(--accent2);
         }
-        .btn-primary:hover {
+        .btn-primary:hover:not(:disabled) {
             background: #c9944a;
             border-color: #c9944a;
         }
@@ -229,6 +258,8 @@
             font-weight: 500;
             font-size: 0.82rem;
             padding: 6px 12px;
+            cursor: pointer;
+            transition: background 0.2s, color 0.2s;
         }
         .btn-example:hover {
             background: #1a1c22;
@@ -271,13 +302,8 @@
             animation: blink 0.8s infinite;
         }
         @keyframes blink {
-            0%,
-            100% {
-                opacity: 1;
-            }
-            50% {
-                opacity: 0;
-            }
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0; }
         }
         .response-box .stats {
             margin-top: 12px;
@@ -349,6 +375,10 @@
             .model-select {
                 width: 100%;
             }
+            .auth-warning {
+                flex-direction: column;
+                gap: 8px;
+            }
         }
     </style>
 </head>
@@ -367,6 +397,12 @@
 
     <!-- ═══════════ Main Card ═══════════ -->
     <div class="card" id="app">
+        <!-- Блок авторизации (скрыт после входа) -->
+        <div id="authBlock" class="auth-warning" style="display: none;">
+            <span>⚠️ Для работы необходим бесплатный аккаунт Puter.</span>
+            <button id="btnSignIn">Войти через Puter</button>
+        </div>
+
         <!-- Выбор модели -->
         <div class="model-row">
             <label for="modelSelect">🧠 Модель:</label>
@@ -406,7 +442,7 @@
 
     <!-- Кнопки -->
     <div class="btn-row">
-        <button class="btn btn-primary" id="btnSend">🚀 Отправить</button>
+        <button class="btn btn-primary" id="btnSend" disabled>🚀 Отправить</button>
         <button class="btn btn-outline" id="btnClear">🗑 Очистить ответ</button>
         <button class="btn btn-outline" id="btnStop" style="display:none;">⏹ Остановить</button>
     </div>
@@ -435,12 +471,54 @@
         const btnSend = document.getElementById('btnSend');
         const btnClear = document.getElementById('btnClear');
         const btnStop = document.getElementById('btnStop');
+        const authBlock = document.getElementById('authBlock');
+        const btnSignIn = document.getElementById('btnSignIn');
         const exampleButtons = document.querySelectorAll('.btn-example');
 
-        let abortController = null; // для отмены стриминга
+        let abortController = null;
         let isStreaming = false;
 
-        // ── Функция: обновить UI во время стриминга ──
+        // ── Проверка авторизации ──────
+        async function checkAuth() {
+            try {
+                if (puter && puter.auth && puter.auth.isSignedIn) {
+                    const signedIn = await puter.auth.isSignedIn();
+                    updateAuthUI(signedIn);
+                } else {
+                    // Библиотека ещё не готова, повторяем попытку
+                    setTimeout(checkAuth, 500);
+                }
+            } catch (e) {
+                console.warn('Ошибка проверки авторизации:', e);
+                updateAuthUI(false);
+            }
+        }
+
+        function updateAuthUI(signedIn) {
+            if (signedIn) {
+                authBlock.style.display = 'none';
+                btnSend.disabled = false;
+                responseBox.innerHTML = '<span class="placeholder">Готов к работе. Введите запрос и нажмите «Отправить».</span>';
+            } else {
+                authBlock.style.display = 'flex';
+                btnSend.disabled = true;
+                responseBox.innerHTML = '<span class="placeholder" style="color:#f87171;">⛔ Сначала войдите в Puter (кнопка выше).</span>';
+            }
+        }
+
+        // Вход через Puter
+        btnSignIn.addEventListener('click', async () => {
+            try {
+                await puter.auth.signIn();
+                // После входа перепроверяем статус
+                checkAuth();
+            } catch (e) {
+                console.error('Ошибка входа:', e);
+                alert('Не удалось войти. Проверьте консоль (F12).');
+            }
+        });
+
+        // ── UI стриминга ───────────────
         function setStreamingState(active) {
             isStreaming = active;
             btnSend.disabled = active;
@@ -452,41 +530,22 @@
             }
         }
 
-        // ── Функция: показать ответ ──
-        function showResponse(text, modelUsed, streamingUsed) {
-            const modelName = modelSelect.options[modelSelect.selectedIndex]?.text || modelUsed;
-            const streamNote = streamingUsed ? ' • стриминг' : '';
-            responseBox.innerHTML =
-                `<div>${escapeHTML(text)}</div>
-                 <div class="stats">
-                   <span>🧠 ${modelUsed}</span>
-                   <span>📝 ${text.length.toLocaleString()} символов</span>
-                   <span>⚡ ${streamNote || 'без стриминга'}</span>
-                 </div>`;
-        }
-
-        function showPlaceholder() {
-            responseBox.innerHTML = '<span class="placeholder">Ответ Claude появится здесь…</span>';
-        }
-
-        function showError(message) {
-            responseBox.innerHTML =
-                `<div style="color: var(--red);">❌ Ошибка: ${escapeHTML(message)}</div>
-                 <div class="stats"><span>Попробуйте ещё раз</span></div>`;
-        }
-
-        // ── Простой escape HTML ──
+        // ── Хелперы ────────────────────
         function escapeHTML(str) {
             const div = document.createElement('div');
             div.appendChild(document.createTextNode(str));
             return div.innerHTML;
         }
 
+        function showPlaceholder(text = 'Ответ Claude появится здесь…') {
+            responseBox.innerHTML = `<span class="placeholder">${text}</span>`;
+        }
+
         // ── Отправка запроса ──────────
         async function sendRequest() {
             const prompt = promptInput.value.trim();
             if (!prompt) {
-                showError('Введите запрос.');
+                responseBox.innerHTML = '<span class="placeholder" style="color:#f87171;">Введите запрос.</span>';
                 return;
             }
 
@@ -501,7 +560,6 @@
 
             setStreamingState(true);
             responseBox.innerHTML = '';
-            responseBox.classList.add('streaming');
 
             let fullText = '';
 
@@ -518,10 +576,8 @@
                         if (abortController.signal.aborted) break;
                         const chunk = part?.text || '';
                         fullText += chunk;
-                        // Обновляем ответ в реальном времени
                         responseBox.innerHTML =
                             `<div>${escapeHTML(fullText)}<span class="cursor-blink"></span></div>`;
-                        // Авто-прокрутка вниз
                         responseBox.scrollTop = responseBox.scrollHeight;
                     }
 
@@ -542,11 +598,17 @@
                     });
 
                     fullText = response?.message?.content?.[0]?.text || JSON.stringify(response, null, 2);
-                    showResponse(fullText, model, false);
+                    responseBox.innerHTML =
+                        `<div>${escapeHTML(fullText)}</div>
+                         <div class="stats">
+                           <span>🧠 ${model}</span>
+                           <span>📝 ${fullText.length.toLocaleString()} символов</span>
+                           <span>📡 без стриминга</span>
+                         </div>`;
                 }
             } catch (err) {
                 if (err.name === 'AbortError') {
-                    // Стрим был остановлен пользователем
+                    // Остановлено пользователем
                     responseBox.innerHTML =
                         `<div>${escapeHTML(fullText)}</div>
                          <div class="stats">
@@ -556,7 +618,9 @@
                          </div>`;
                 } else {
                     console.error(err);
-                    showError(err.message || 'Неизвестная ошибка');
+                    responseBox.innerHTML =
+                        `<div style="color: var(--red);">❌ Ошибка: ${escapeHTML(err.message || 'Неизвестная ошибка')}</div>
+                         <div class="stats"><span>Попробуйте ещё раз</span></div>`;
                 }
             } finally {
                 setStreamingState(false);
@@ -578,7 +642,7 @@
         // ── Очистка ───────────────────
         function clearResponse() {
             stopStreaming();
-            showPlaceholder();
+            showPlaceholder('Ответ очищен. Введите новый запрос.');
             promptInput.focus();
         }
 
@@ -589,8 +653,12 @@
                 if (prompt) {
                     promptInput.value = prompt;
                     promptInput.focus();
-                    // Авто-отправка при клике на пример
-                    sendRequest();
+                    // Авто-отправка, только если пользователь авторизован
+                    if (!btnSend.disabled) {
+                        sendRequest();
+                    } else {
+                        showPlaceholder('Сначала войдите в Puter.');
+                    }
                 }
             });
         });
@@ -604,11 +672,14 @@
         promptInput.addEventListener('keydown', (e) => {
             if ((e.ctrlKey || e.metaKey) && e.key === 'Enter') {
                 e.preventDefault();
-                sendRequest();
+                if (!btnSend.disabled) {
+                    sendRequest();
+                }
             }
         });
 
         // ── Инициализация ─────────────
+        checkAuth(); // проверяем авторизацию при загрузке
         promptInput.focus();
         console.log('✅ Бесплатный Claude AI готов. Модель по умолчанию:', modelSelect.value);
         console.log('📚 Документация: https://docs.puter.com/AI/');
