@@ -3,10 +3,16 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Бесплатный Claude AI — с памятью диалога (Puter.js)</title>
+    <title>Бесплатный AI — Puter + Hugging Face (официальный клиент)</title>
 
-    <!-- Puter.js CDN -->
+    <!-- Puter.js (только для Puter-провайдера) -->
     <script src="https://js.puter.com/v2/"></script>
+
+    <!-- Hugging Face Inference Client (ES модуль) -->
+    <script type="module">
+        import { InferenceClient } from 'https://cdn.jsdelivr.net/npm/@huggingface/inference@4.13.18/+esm';
+        window.HFClient = InferenceClient; // пробросим в глобальную область
+    </script>
 
     <style>
         :root {
@@ -19,532 +25,188 @@
             --accent: #d4a574;
             --accent2: #b8884e;
             --claude: #d97757;
-            --red: #f87171;
+            --hf: #5b8def;
             --radius: 14px;
             --radius-sm: 8px;
-            --font: 'Inter', 'Segoe UI', system-ui, -apple-system, sans-serif;
-            --mono: 'JetBrains Mono', 'Fira Code', 'Cascadia Code', monospace;
+            --font: 'Inter', 'Segoe UI', system-ui, sans-serif;
         }
-
-        * {
-            margin: 0;
-            padding: 0;
-            box-sizing: border-box;
-        }
-
+        * { margin: 0; padding: 0; box-sizing: border-box; }
         body {
-            background: var(--bg);
-            color: var(--text);
-            font-family: var(--font);
-            min-height: 100vh;
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            padding: 24px 16px 60px;
-            line-height: 1.6;
-            -webkit-font-smoothing: antialiased;
+            background: var(--bg); color: var(--text);
+            font-family: var(--font); min-height: 100vh;
+            display: flex; flex-direction: column; align-items: center;
+            padding: 24px 16px 60px; line-height: 1.6;
         }
-
-        /* ── Header ────────────────────── */
-        .header {
-            text-align: center;
-            margin-bottom: 32px;
-            max-width: 720px;
-            width: 100%;
-        }
+        .header { text-align: center; margin-bottom: 32px; max-width: 720px; width: 100%; }
         .header .badge {
-            display: inline-block;
-            background: #1a1c22;
-            border: 1px solid var(--border);
-            color: var(--accent);
-            font-size: 0.78rem;
-            font-weight: 600;
-            letter-spacing: 0.04em;
-            text-transform: uppercase;
-            padding: 5px 14px;
-            border-radius: 99px;
-            margin-bottom: 16px;
+            display: inline-block; background: #1a1c22; border: 1px solid var(--border);
+            color: var(--accent); font-size: 0.78rem; font-weight: 600;
+            letter-spacing: 0.04em; text-transform: uppercase; padding: 5px 14px;
+            border-radius: 99px; margin-bottom: 16px;
         }
-        .header h1 {
-            font-size: 2.1rem;
-            font-weight: 700;
-            letter-spacing: -0.02em;
-            margin-bottom: 6px;
-            color: #f0f0f4;
-        }
-        .header h1 span {
-            color: var(--claude);
-        }
-        .header p {
-            color: var(--text2);
-            font-size: 0.95rem;
-            max-width: 520px;
-            margin: 0 auto;
-        }
-
-        /* ── Main card ────────────────── */
+        .header h1 { font-size: 2.1rem; font-weight: 700; color: #f0f0f4; }
+        .header h1 span.puter-color { color: var(--claude); }
+        .header h1 span.hf-color { color: var(--hf); }
+        .header p { color: var(--text2); font-size: 0.95rem; max-width: 520px; margin: 0 auto; }
         .card {
-            background: var(--surface);
-            border: 1px solid var(--border);
-            border-radius: var(--radius);
-            padding: 28px 28px 24px;
-            width: 100%;
-            max-width: 720px;
-            display: flex;
-            flex-direction: column;
-            gap: 18px;
-            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.35);
+            background: var(--surface); border: 1px solid var(--border);
+            border-radius: var(--radius); padding: 28px; width: 100%; max-width: 720px;
+            display: flex; flex-direction: column; gap: 18px;
+            box-shadow: 0 8px 32px rgba(0,0,0,0.35);
         }
-
-        /* ── Auth block ───────────────── */
         .auth-warning {
-            background: #2a1f1a;
-            border: 1px solid #b8884e;
-            border-radius: var(--radius-sm);
-            padding: 16px;
-            color: #e0b87a;
-            font-size: 0.9rem;
-            text-align: center;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            gap: 12px;
-            flex-wrap: wrap;
+            background: #2a1f1a; border: 1px solid #b8884e; border-radius: var(--radius-sm);
+            padding: 16px; color: #e0b87a; font-size: 0.9rem; text-align: center;
+            display: flex; align-items: center; justify-content: center; gap: 12px; flex-wrap: wrap;
         }
         .auth-warning button {
-            background: var(--accent2);
-            color: #0d0f13;
-            border: none;
-            padding: 10px 24px;
-            border-radius: 6px;
-            font-weight: 600;
-            cursor: pointer;
-            transition: background 0.2s;
+            background: var(--accent2); color: #0d0f13; border: none;
+            padding: 10px 24px; border-radius: 6px; font-weight: 600; cursor: pointer;
         }
-        .auth-warning button:hover {
-            background: #c9944a;
+        .provider-row { display: flex; flex-wrap: wrap; align-items: center; gap: 16px; }
+        .provider-row label { font-weight: 600; color: var(--text2); display: flex; align-items: center; gap: 6px; cursor: pointer; }
+        .provider-row input[type="radio"] { accent-color: var(--accent2); width: 16px; height: 16px; }
+        .hf-settings { display: none; flex-direction: column; gap: 10px; margin-top: 8px; }
+        .hf-settings.active { display: flex; }
+        .hf-settings label { font-size: 0.85rem; color: var(--text2); font-weight: 600; }
+        .hf-settings input, .hf-settings select {
+            background: var(--surface2); color: var(--text); border: 1px solid var(--border);
+            border-radius: var(--radius-sm); padding: 10px 14px; font-size: 0.9rem; outline: none;
         }
-
-        /* ── Model selector ───────────── */
-        .model-row {
-            display: flex;
-            flex-wrap: wrap;
-            align-items: center;
-            gap: 10px;
-        }
-        .model-row label {
-            font-weight: 600;
-            font-size: 0.88rem;
-            color: var(--text2);
-            letter-spacing: 0.01em;
-            white-space: nowrap;
-        }
+        .hf-settings input::placeholder { color: #5a5d66; }
+        .model-row { display: flex; flex-wrap: wrap; align-items: center; gap: 10px; }
         .model-select {
-            flex: 1;
-            min-width: 200px;
-            background: var(--surface2);
-            color: var(--text);
-            border: 1px solid var(--border);
-            border-radius: var(--radius-sm);
-            padding: 10px 14px;
-            font-size: 0.9rem;
-            font-family: var(--font);
-            cursor: pointer;
-            outline: none;
-            transition: border 0.2s;
+            flex: 1; min-width: 200px; background: var(--surface2); color: var(--text);
+            border: 1px solid var(--border); border-radius: var(--radius-sm); padding: 10px 14px;
+            font-size: 0.9rem; cursor: pointer; outline: none;
         }
-        .model-select:focus {
-            border-color: var(--accent2);
-        }
-        .stream-toggle {
-            display: flex;
-            align-items: center;
-            gap: 7px;
-            font-size: 0.85rem;
-            color: var(--text2);
-            cursor: pointer;
-            user-select: none;
-            white-space: nowrap;
-        }
-        .stream-toggle input {
-            accent-color: var(--accent2);
-            width: 16px;
-            height: 16px;
-            cursor: pointer;
-        }
-
-        /* ── Textarea ─────────────────── */
-        .prompt-area {
-            display: flex;
-            flex-direction: column;
-            gap: 8px;
-        }
-        .prompt-area label {
-            font-weight: 600;
-            font-size: 0.88rem;
-            color: var(--text2);
-            letter-spacing: 0.01em;
-        }
+        .stream-toggle { display: flex; align-items: center; gap: 7px; font-size: 0.85rem; color: var(--text2); cursor: pointer; }
+        .prompt-area { display: flex; flex-direction: column; gap: 8px; }
         .prompt-area textarea {
-            width: 100%;
-            min-height: 80px;
-            background: var(--surface2);
-            color: var(--text);
-            border: 1px solid var(--border);
-            border-radius: var(--radius-sm);
-            padding: 14px 16px;
-            font-size: 0.92rem;
-            font-family: var(--font);
-            resize: vertical;
-            outline: none;
-            line-height: 1.55;
-            transition: border 0.2s;
+            width: 100%; min-height: 80px; background: var(--surface2); color: var(--text);
+            border: 1px solid var(--border); border-radius: var(--radius-sm); padding: 14px 16px;
+            font-size: 0.92rem; resize: vertical; outline: none; line-height: 1.55;
         }
-        .prompt-area textarea:focus {
-            border-color: var(--accent2);
-        }
-        .prompt-area textarea::placeholder {
-            color: #5a5d66;
-        }
-
-        /* ── Buttons ──────────────────── */
-        .btn-row {
-            display: flex;
-            flex-wrap: wrap;
-            gap: 10px;
-        }
+        .btn-row { display: flex; flex-wrap: wrap; gap: 10px; }
         .btn {
-            font-family: var(--font);
-            font-weight: 600;
-            font-size: 0.9rem;
-            letter-spacing: 0.01em;
-            padding: 11px 22px;
-            border-radius: var(--radius-sm);
-            border: 1px solid transparent;
-            cursor: pointer;
-            transition: all 0.2s;
-            display: inline-flex;
-            align-items: center;
-            gap: 7px;
+            font-weight: 600; font-size: 0.9rem; padding: 11px 22px;
+            border-radius: var(--radius-sm); border: 1px solid transparent; cursor: pointer;
+            display: inline-flex; align-items: center; gap: 7px; transition: all 0.2s;
         }
-        .btn-primary {
-            background: var(--accent2);
-            color: #0d0f13;
-            border-color: var(--accent2);
-        }
-        .btn-primary:hover:not(:disabled) {
-            background: #c9944a;
-            border-color: #c9944a;
-        }
-        .btn-primary:disabled {
-            opacity: 0.45;
-            cursor: not-allowed;
-            pointer-events: none;
-        }
-        .btn-outline {
-            background: transparent;
-            color: var(--text);
-            border-color: var(--border);
-        }
-        .btn-outline:hover {
-            background: var(--surface2);
-            border-color: #3a3d47;
-        }
-        .btn-example {
-            background: transparent;
-            color: var(--accent);
-            border-color: transparent;
-            font-weight: 500;
-            font-size: 0.82rem;
-            padding: 6px 12px;
-            cursor: pointer;
-            transition: background 0.2s, color 0.2s;
-            border-radius: 6px;
-        }
-        .btn-example:hover {
-            background: #1a1c22;
-            color: #e0b87a;
-        }
-
-        /* ── Response area ────────────── */
+        .btn-primary { background: var(--accent2); color: #0d0f13; }
+        .btn-primary:disabled { opacity: 0.45; cursor: not-allowed; }
+        .btn-outline { background: transparent; color: var(--text); border-color: var(--border); }
         .response-box {
-            background: var(--surface2);
-            border: 1px solid var(--border);
-            border-radius: var(--radius-sm);
-            padding: 18px 20px;
-            min-height: 140px;
-            max-height: 520px;
-            overflow-y: auto;
-            font-size: 0.9rem;
-            line-height: 1.65;
-            white-space: pre-wrap;
-            word-break: break-word;
-            color: #d8dbe2;
-            font-family: var(--font);
-            transition: border 0.3s;
-            position: relative;
-            display: flex;
-            flex-direction: column;
-            gap: 16px;
+            background: var(--surface2); border: 1px solid var(--border); border-radius: var(--radius-sm);
+            padding: 18px 20px; min-height: 140px; max-height: 520px; overflow-y: auto;
+            font-size: 0.9rem; white-space: pre-wrap; word-break: break-word;
+            display: flex; flex-direction: column; gap: 10px;
         }
-        .response-box.streaming {
-            border-color: var(--accent2);
-            box-shadow: 0 0 0 3px rgba(184, 136, 78, 0.08);
-        }
-        .response-box .placeholder {
-            color: #4a4d56;
-            font-style: italic;
-        }
-        .response-box .cursor-blink {
-            display: inline-block;
-            width: 2px;
-            height: 1.1em;
-            background: var(--accent);
-            margin-left: 2px;
-            vertical-align: text-bottom;
-            animation: blink 0.8s infinite;
-        }
-        @keyframes blink {
-            0%,
-            100% {
-                opacity: 1;
-            }
-            50% {
-                opacity: 0;
-            }
-        }
-        .response-box .stats {
-            margin-top: 12px;
-            font-size: 0.75rem;
-            color: #5a5d66;
-            border-top: 1px solid var(--border);
-            padding-top: 10px;
-            display: flex;
-            gap: 16px;
-            flex-wrap: wrap;
-        }
-
-        /* ── Message bubbles ──────────── */
+        .conversation-view { display: flex; flex-direction: column; gap: 10px; max-height: 400px; overflow-y: auto; }
         .message-bubble {
-            padding: 10px 14px;
-            border-radius: 12px;
-            max-width: 100%;
-            word-break: break-word;
-            animation: fadeIn 0.2s ease;
+            padding: 10px 14px; border-radius: 12px; max-width: 100%;
+            word-break: break-word; animation: fadeIn 0.2s ease;
         }
-        @keyframes fadeIn {
-            from {
-                opacity: 0;
-                transform: translateY(4px);
-            }
-            to {
-                opacity: 1;
-                transform: translateY(0);
-            }
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(4px); } to { opacity: 1; transform: translateY(0); } }
+        .user-bubble { background: #2a2d35; align-self: flex-end; text-align: right; border-bottom-right-radius: 4px; }
+        .assistant-bubble { background: #1e2028; border: 1px solid var(--border); align-self: flex-start; border-bottom-left-radius: 4px; }
+        .stats { font-size: 0.75rem; color: #5a5d66; border-top: 1px solid var(--border); padding-top: 8px; margin-top: 8px; display: flex; gap: 16px; }
+        .history-info { font-size: 0.75rem; color: #5a5d66; }
+        .examples-strip { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 2px; }
+        .btn-example {
+            font-size: 0.78rem; padding: 5px 11px; border-radius: 99px;
+            border: 1px solid var(--border); background: var(--surface2); color: var(--text2); cursor: pointer;
         }
-        .user-bubble {
-            background: #2a2d35;
-            align-self: flex-end;
-            text-align: right;
-            border-bottom-right-radius: 4px;
-            color: #e1e3e8;
-        }
-        .assistant-bubble {
-            background: #1e2028;
-            border: 1px solid var(--border);
-            align-self: flex-start;
-            border-bottom-left-radius: 4px;
-            color: #d8dbe2;
-        }
-        .message-meta {
-            font-size: 0.7rem;
-            color: #6b6f7a;
-            margin-top: 4px;
-        }
-        .user-meta {
-            text-align: right;
-        }
-        .assistant-meta {
-            text-align: left;
-        }
-
-        /* ── Conversation container ───── */
-        .conversation-view {
-            display: flex;
-            flex-direction: column;
-            gap: 10px;
-            max-height: 400px;
-            overflow-y: auto;
-            padding-right: 6px;
-            scroll-behavior: smooth;
-        }
-        .conversation-view::-webkit-scrollbar {
-            width: 5px;
-        }
-        .conversation-view::-webkit-scrollbar-thumb {
-            background: #2a2d35;
-            border-radius: 4px;
-        }
-
-        /* ── History counter ──────────── */
-        .history-info {
-            font-size: 0.75rem;
-            color: #5a5d66;
-            display: flex;
-            align-items: center;
-            gap: 6px;
-        }
-
-        /* ── Examples strip ───────────── */
-        .examples-strip {
-            display: flex;
-            flex-wrap: wrap;
-            gap: 6px;
-            margin-top: 2px;
-        }
-        .examples-strip .btn-example {
-            font-size: 0.78rem;
-            padding: 5px 11px;
-            border-radius: 99px;
-            border: 1px solid var(--border);
-            background: var(--surface2);
-            color: var(--text2);
-        }
-        .examples-strip .btn-example:hover {
-            background: #252830;
-            color: var(--text);
-            border-color: #3a3d47;
-        }
-
-        /* ── Footer info ──────────────── */
-        .footer-note {
-            margin-top: 20px;
-            font-size: 0.78rem;
-            color: #4a4d56;
-            text-align: center;
-            max-width: 720px;
-        }
-        .footer-note a {
-            color: var(--accent2);
-            text-decoration: none;
-        }
-        .footer-note a:hover {
-            text-decoration: underline;
-        }
-
-        /* ── Responsive ───────────────── */
+        .footer-note { margin-top: 20px; font-size: 0.78rem; color: #4a4d56; text-align: center; }
         @media (max-width: 520px) {
-            .header h1 {
-                font-size: 1.5rem;
-            }
-            .card {
-                padding: 18px 16px 20px;
-                gap: 14px;
-            }
-            .btn-row {
-                flex-direction: column;
-            }
-            .btn {
-                justify-content: center;
-            }
-            .model-row {
-                flex-direction: column;
-                align-items: flex-start;
-            }
-            .model-select {
-                width: 100%;
-            }
-            .auth-warning {
-                flex-direction: column;
-                gap: 8px;
-            }
-            .user-bubble,
-            .assistant-bubble {
-                max-width: 100%;
-            }
+            .header h1 { font-size: 1.5rem; }
+            .card { padding: 18px 16px; }
+            .btn-row { flex-direction: column; }
         }
     </style>
 </head>
 <body>
-
-    <!-- ═══════════ Header ═══════════ -->
     <div class="header">
-        <div class="badge">Бесплатно • Без API-ключа • Память диалога</div>
-        <h1>Claude AI <span>с контекстом</span></h1>
-        <p>
-            Полноценный диалог — Claude помнит всё, что вы обсуждали.
-            Можно уточнять, переспрашивать и развивать тему без повторения.
-        </p>
+        <div class="badge">Бесплатно • Два провайдера • Официальный HF клиент</div>
+        <h1>AI Ассистент <span class="puter-color">Puter</span> + <span class="hf-color">Hugging Face</span></h1>
+        <p>Переключайтесь между Claude (Puter) и моделями Hugging Face через официальный Inference Client. Контекст сохраняется.</p>
     </div>
 
-    <!-- ═══════════ Main Card ═══════════ -->
     <div class="card" id="app">
-        <!-- Блок авторизации -->
+        <!-- Блок авторизации Puter -->
         <div id="authBlock" class="auth-warning" style="display: none;">
-            <span>⚠️ Для работы необходим бесплатный аккаунт Puter.</span>
+            <span>⚠️ Для Puter нужен бесплатный аккаунт.</span>
             <button id="btnSignIn">Войти через Puter</button>
         </div>
 
-        <!-- Выбор модели -->
-        <div class="model-row">
-            <label for="modelSelect">🧠 Модель:</label>
+        <!-- Выбор провайдера -->
+        <div class="provider-row">
+            <label><input type="radio" name="provider" value="puter" checked> <span>Puter (Claude)</span></label>
+            <label><input type="radio" name="provider" value="huggingface"> <span>Hugging Face (официальный клиент)</span></label>
+        </div>
+
+        <!-- Настройки Hugging Face -->
+        <div id="hfSettings" class="hf-settings">
+            <label for="hfToken">HF API Token:</label>
+            <input type="password" id="hfToken" placeholder="hf_..." autocomplete="off">
+            <label for="hfModel">Модель:</label>
+            <select id="hfModel">
+                <option value="meta-llama/Llama-3.1-8B-Instruct">Llama 3.1 8B (Meta)</option>
+                <option value="mistralai/Mistral-7B-Instruct-v0.3">Mistral 7B v0.3</option>
+                <option value="google/gemma-7b-it">Gemma 7B</option>
+                <option value="microsoft/Phi-3-mini-4k-instruct">Phi-3 Mini</option>
+            </select>
+        </div>
+
+        <!-- Выбор Claude модели (только для Puter) -->
+        <div class="model-row" id="puterModelRow">
+            <label>🧠 Модель Claude:</label>
             <select id="modelSelect" class="model-select">
                 <option value="claude-sonnet-4-6" selected>Claude Sonnet 4.6</option>
                 <option value="claude-opus-4-8">Claude Opus 4.8</option>
                 <option value="claude-opus-4-7">Claude Opus 4.7</option>
-                <option value="claude-opus-4-7-fast">Claude Opus 4.7 Fast</option>
-                <option value="claude-opus-4-6">Claude Opus 4.6</option>
                 <option value="claude-haiku-4-5">Claude Haiku 4.5</option>
-                <option value="claude-sonnet-4-5">Claude Sonnet 4.5</option>
             </select>
-            <label class="stream-toggle" title="Потоковый вывод">
-                <input type="checkbox" id="streamToggle" checked>
-                Стриминг
-            </label>
+            <label class="stream-toggle"><input type="checkbox" id="streamToggle" checked> Стриминг</label>
         </div>
 
-        <!-- Поле ввода -->
         <div class="prompt-area">
-            <label for="promptInput">💬 Сообщение:</label>
-            <textarea id="promptInput" placeholder="Введите сообщение... (история сохраняется)"></textarea>
+            <label>💬 Сообщение:</label>
+            <textarea id="promptInput" placeholder="Введите сообщение..."></textarea>
             <div class="examples-strip">
-                <button class="btn-example" data-prompt="Привет! Расскажи коротко о себе.">👋 Привет</button>
-                <button class="btn-example" data-prompt="Объясни квантовые вычисления простыми словами">⚛️ Квантовые вычисления</button>
-                <button class="btn-example" data-prompt="Напиши стихотворение о программировании">🎵 Стих о коде</button>
-                <button class="btn-example" data-prompt="Какие планеты Солнечной системы имеют кольца?">🪐 Кольца планет</button>
+                <button class="btn-example" data-prompt="Привет! Расскажи о себе.">👋 Привет</button>
+                <button class="btn-example" data-prompt="Объясни квантовые вычисления">⚛️ Квантовые вычисления</button>
+                <button class="btn-example" data-prompt="Напиши быструю сортировку на Python">🐍 QuickSort</button>
             </div>
         </div>
 
-        <!-- Кнопки -->
         <div class="btn-row">
             <button class="btn btn-primary" id="btnSend" disabled>🚀 Отправить</button>
             <button class="btn btn-outline" id="btnNewChat">💬 Новый диалог</button>
             <button class="btn btn-outline" id="btnStop" style="display:none;">⏹ Остановить</button>
         </div>
 
-        <!-- Блок ответа с историей -->
         <div class="response-box" id="responseBox">
             <div id="conversationView" class="conversation-view"></div>
-            <div id="infoBar" class="history-info">
-                <span>📭 Диалог пуст</span>
-            </div>
+            <div id="infoBar" class="history-info"><span>📭 Диалог пуст</span></div>
         </div>
     </div>
 
-    <!-- ═══════════ Footer ═══════════ -->
     <div class="footer-note">
-        Работает через <a href="https://docs.puter.com/AI/" target="_blank" rel="noopener">Puter.js</a>.
-        Модель <strong>User-Pays</strong> — вы оплачиваете только свои запросы.
+        Puter — User‑Pays модель. Hugging Face — официальный клиент, бесплатный тир.
     </div>
 
-    <!-- ═══════════ Scripts ═══════════ -->
     <script>
         (function() {
             // ── DOM элементы ──────────────
+            const providerRadios = document.querySelectorAll('input[name="provider"]');
+            const hfSettings = document.getElementById('hfSettings');
+            const puterModelRow = document.getElementById('puterModelRow');
+            const hfTokenInput = document.getElementById('hfToken');
+            const hfModelSelect = document.getElementById('hfModel');
             const modelSelect = document.getElementById('modelSelect');
             const streamToggle = document.getElementById('streamToggle');
             const promptInput = document.getElementById('promptInput');
-            const responseBox = document.getElementById('responseBox');
             const conversationView = document.getElementById('conversationView');
             const infoBar = document.getElementById('infoBar');
             const btnSend = document.getElementById('btnSend');
@@ -554,12 +216,27 @@
             const btnSignIn = document.getElementById('btnSignIn');
             const exampleButtons = document.querySelectorAll('.btn-example');
 
-            // ── Состояние ─────────────────
-            let conversation = []; // массив { role: "user" | "assistant", content: string }
+            let conversation = [];
             let abortController = null;
             let isStreaming = false;
+            let hfClient = null;
 
-            // ── Проверка авторизации ──────
+            // ── Текущий провайдер ────────
+            function getCurrentProvider() {
+                return document.querySelector('input[name="provider"]:checked').value;
+            }
+
+            // ── Инициализация HF клиента ─
+            function initHFClient() {
+                const token = hfTokenInput.value.trim();
+                if (token && window.HFClient) {
+                    hfClient = new window.HFClient(token);
+                } else {
+                    hfClient = null;
+                }
+            }
+
+            // ── Авторизация Puter ────────
             async function checkAuth() {
                 try {
                     if (puter && puter.auth && puter.auth.isSignedIn) {
@@ -569,44 +246,64 @@
                         setTimeout(checkAuth, 500);
                     }
                 } catch (e) {
-                    console.warn('Ошибка проверки авторизации:', e);
                     updateAuthUI(false);
                 }
             }
-
             function updateAuthUI(signedIn) {
-                if (signedIn) {
+                if (getCurrentProvider() === 'puter') {
+                    authBlock.style.display = signedIn ? 'none' : 'flex';
+                    btnSend.disabled = !signedIn;
+                } else {
                     authBlock.style.display = 'none';
                     btnSend.disabled = false;
-                } else {
-                    authBlock.style.display = 'flex';
-                    btnSend.disabled = true;
                 }
             }
-
             btnSignIn.addEventListener('click', async () => {
-                try {
-                    await puter.auth.signIn();
-                    checkAuth();
-                } catch (e) {
-                    console.error('Ошибка входа:', e);
-                    alert('Не удалось войти. Проверьте консоль (F12).');
-                }
+                await puter.auth.signIn();
+                checkAuth();
             });
 
-            // ── Управление стримингом ─────
+            // ── Переключение провайдера ──
+            function onProviderChange() {
+                const provider = getCurrentProvider();
+                if (provider === 'puter') {
+                    hfSettings.classList.remove('active');
+                    puterModelRow.style.display = 'flex';
+                    checkAuth();
+                } else {
+                    hfSettings.classList.add('active');
+                    puterModelRow.style.display = 'none';
+                    authBlock.style.display = 'none';
+                    btnSend.disabled = false;
+                    initHFClient();
+                }
+                resetConversation();
+            }
+            providerRadios.forEach(r => r.addEventListener('change', onProviderChange));
+
+            // ── Сохранение токена ────────
+            if (localStorage.getItem('hfToken')) {
+                hfTokenInput.value = localStorage.getItem('hfToken');
+            }
+            hfTokenInput.addEventListener('input', () => {
+                const token = hfTokenInput.value.trim();
+                localStorage.setItem('hfToken', token);
+                initHFClient();
+            });
+
+            // ── UI стриминга ─────────────
             function setStreamingState(active) {
                 isStreaming = active;
                 btnSend.disabled = active;
                 btnStop.style.display = active ? 'inline-flex' : 'none';
-                if (active) {
-                    responseBox.classList.add('streaming');
-                } else {
-                    responseBox.classList.remove('streaming');
-                }
             }
 
-            // ── Рендер истории ────────────
+            function escapeHTML(str) {
+                const div = document.createElement('div');
+                div.appendChild(document.createTextNode(str));
+                return div.innerHTML;
+            }
+
             function renderConversation() {
                 conversationView.innerHTML = '';
                 conversation.forEach(msg => {
@@ -615,174 +312,155 @@
                     bubble.innerHTML = escapeHTML(msg.content);
                     conversationView.appendChild(bubble);
                 });
-                // Прокрутка вниз
                 conversationView.scrollTop = conversationView.scrollHeight;
                 updateInfoBar();
             }
-
             function updateInfoBar() {
-                const count = conversation.length;
-                infoBar.innerHTML = count === 0 ?
+                infoBar.innerHTML = conversation.length === 0 ?
                     '<span>📭 Диалог пуст</span>' :
-                    `<span>💾 ${count} сообщ. в истории</span>`;
+                    `<span>💾 ${conversation.length} сообщений</span>`;
             }
-
-            // ── Очистка диалога ───────────
             function resetConversation() {
+                if (abortController) abortController.abort();
                 conversation = [];
                 renderConversation();
                 promptInput.value = '';
                 promptInput.focus();
-                if (abortController) {
-                    abortController.abort();
-                }
                 setStreamingState(false);
-                responseBox.classList.remove('streaming');
-                updateInfoBar();
-            }
-
-            // ── Хелперы ──────────────────
-            function escapeHTML(str) {
-                const div = document.createElement('div');
-                div.appendChild(document.createTextNode(str));
-                return div.innerHTML;
             }
 
             // ── Отправка сообщения ───────
             async function sendRequest() {
                 const prompt = promptInput.value.trim();
                 if (!prompt) return;
+                const provider = getCurrentProvider();
 
-                // Добавляем сообщение пользователя в историю
                 conversation.push({ role: 'user', content: prompt });
                 renderConversation();
                 promptInput.value = '';
 
-                const model = modelSelect.value;
-                const useStream = streamToggle.checked;
-
-                // Отменяем предыдущий стрим, если есть
-                if (abortController) {
-                    abortController.abort();
-                }
+                if (abortController) abortController.abort();
                 abortController = new AbortController();
-
                 setStreamingState(true);
 
-                // Временно добавляем пустой ответ ассистента, который будем наполнять
                 const assistantMsg = { role: 'assistant', content: '' };
                 conversation.push(assistantMsg);
                 const assistantIndex = conversation.length - 1;
-                renderConversation(); // покажет пустой пузырь
+                renderConversation();
 
                 try {
-                    if (useStream) {
-                        const response = await puter.ai.chat(
-                            conversation.filter(m => m.role !== 'assistant' || m.content !== ''), // шлём только с контентом, кроме текущего пустого
-                            { model, stream: true, signal: abortController.signal }
-                        );
-
-                        for await (const part of response) {
-                            if (abortController.signal.aborted) break;
-                            const chunk = part?.text || '';
-                            conversation[assistantIndex].content += chunk;
-                            // Обновляем только последний пузырь
-                            const bubbles = conversationView.querySelectorAll('.assistant-bubble');
-                            if (bubbles.length > 0) {
-                                const lastBubble = bubbles[bubbles.length - 1];
-                                lastBubble.innerHTML = escapeHTML(conversation[assistantIndex].content) +
-                                    '<span class="cursor-blink"></span>';
-                            }
-                            conversationView.scrollTop = conversationView.scrollHeight;
-                        }
-
-                        // Убираем курсор после завершения
-                        const bubbles = conversationView.querySelectorAll('.assistant-bubble');
-                        if (bubbles.length > 0) {
-                            const lastBubble = bubbles[bubbles.length - 1];
-                            lastBubble.innerHTML = escapeHTML(conversation[assistantIndex].content);
-                        }
+                    if (provider === 'puter') {
+                        await sendToPuter(assistantIndex);
                     } else {
-                        // Без стриминга
-                        const response = await puter.ai.chat(
-                            conversation.filter(m => m.role !== 'assistant' || m.content !== ''),
-                            { model, stream: false, signal: abortController.signal }
-                        );
-                        const text = response?.message?.content?.[0]?.text || JSON.stringify(response, null, 2);
-                        conversation[assistantIndex].content = text;
-                        renderConversation();
+                        await sendToHuggingFace(assistantIndex);
                     }
                 } catch (err) {
                     if (err.name === 'AbortError') {
-                        // Оставлено как есть, с частичным текстом
-                        const bubbles = conversationView.querySelectorAll('.assistant-bubble');
-                        if (bubbles.length > 0) {
-                            const lastBubble = bubbles[bubbles.length - 1];
-                            lastBubble.innerHTML = escapeHTML(conversation[assistantIndex].content) +
-                                ' <span style="color:#f87171;">[остановлено]</span>';
-                        }
+                        conversation[assistantIndex].content += ' [остановлено]';
+                        updateAssistantBubble(assistantIndex, false);
                     } else {
-                        console.error(err);
-                        // Удаляем пустой ответ ассистента
                         conversation.pop();
                         renderConversation();
-                        // Показываем ошибку
-                        const errorBubble = document.createElement('div');
-                        errorBubble.className = 'message-bubble assistant-bubble';
-                        errorBubble.innerHTML =
-                            `<span style="color: var(--red);">❌ Ошибка: ${escapeHTML(err.message)}</span>`;
-                        conversationView.appendChild(errorBubble);
+                        const errBubble = document.createElement('div');
+                        errBubble.className = 'message-bubble assistant-bubble';
+                        errBubble.innerHTML = `❌ Ошибка: ${escapeHTML(err.message)}`;
+                        conversationView.appendChild(errBubble);
                     }
                 } finally {
                     setStreamingState(false);
                     abortController = null;
-                    responseBox.classList.remove('streaming');
                     updateInfoBar();
                 }
             }
 
-            // ── Остановка ────────────────
-            function stopStreaming() {
-                if (abortController) {
-                    abortController.abort();
+            // ── Puter запрос ────────────
+            async function sendToPuter(assistantIndex) {
+                const model = modelSelect.value;
+                const useStream = streamToggle.checked;
+                const messages = conversation.filter(m => m.role !== 'assistant' || m.content !== '');
+                if (useStream) {
+                    const response = await puter.ai.chat(messages, {
+                        model, stream: true, signal: abortController.signal
+                    });
+                    for await (const part of response) {
+                        if (abortController.signal.aborted) break;
+                        conversation[assistantIndex].content += part?.text || '';
+                        updateAssistantBubble(assistantIndex, true);
+                    }
+                } else {
+                    const response = await puter.ai.chat(messages, {
+                        model, stream: false, signal: abortController.signal
+                    });
+                    conversation[assistantIndex].content = response?.message?.content?.[0]?.text || '';
                 }
-                setStreamingState(false);
-                responseBox.classList.remove('streaming');
+                updateAssistantBubble(assistantIndex, false);
             }
+
+            // ── Hugging Face запрос (официальный клиент) ──
+            async function sendToHuggingFace(assistantIndex) {
+                const token = hfTokenInput.value.trim();
+                if (!token) throw new Error('Введите Hugging Face токен');
+                if (!hfClient) throw new Error('HF клиент не инициализирован');
+                const model = hfModelSelect.value;
+                const messages = conversation.filter(m => m.role !== 'assistant' || m.content !== '');
+
+                // Потоковый стриминг через официальный клиент
+                const stream = hfClient.chatCompletionStream({
+                    model: model,
+                    messages: messages,
+                    max_tokens: 1024,
+                });
+
+                for await (const chunk of stream) {
+                    if (abortController.signal.aborted) break;
+                    const content = chunk.choices?.[0]?.delta?.content || '';
+                    conversation[assistantIndex].content += content;
+                    updateAssistantBubble(assistantIndex, true);
+                }
+                updateAssistantBubble(assistantIndex, false);
+            }
+
+            function updateAssistantBubble(index, showCursor) {
+                const bubbles = conversationView.querySelectorAll('.assistant-bubble');
+                if (bubbles.length > 0) {
+                    const last = bubbles[bubbles.length - 1];
+                    last.innerHTML = escapeHTML(conversation[index].content) + (showCursor ? '<span style="display:inline-block;width:2px;height:1.2em;background:var(--accent);margin-left:2px;animation:blink 0.8s infinite;"></span>' : '');
+                    conversationView.scrollTop = conversationView.scrollHeight;
+                }
+            }
+
+            // ── Остановка ────────────────
+            btnStop.addEventListener('click', () => {
+                if (abortController) abortController.abort();
+            });
+
+            // ── Новый диалог ─────────────
+            btnNewChat.addEventListener('click', resetConversation);
 
             // ── Примеры ──────────────────
             exampleButtons.forEach(btn => {
                 btn.addEventListener('click', () => {
-                    const prompt = btn.getAttribute('data-prompt');
-                    if (prompt) {
-                        promptInput.value = prompt;
-                        promptInput.focus();
-                        if (!btnSend.disabled) {
-                            sendRequest();
-                        }
-                    }
+                    promptInput.value = btn.dataset.prompt;
+                    if (!btnSend.disabled) sendRequest();
                 });
             });
 
-            // ── Обработчики ───────────────
-            btnSend.addEventListener('click', sendRequest);
-            btnNewChat.addEventListener('click', resetConversation);
-            btnStop.addEventListener('click', stopStreaming);
-
-            promptInput.addEventListener('keydown', (e) => {
+            // ── Ctrl+Enter ───────────────
+            promptInput.addEventListener('keydown', e => {
                 if ((e.ctrlKey || e.metaKey) && e.key === 'Enter') {
                     e.preventDefault();
-                    if (!btnSend.disabled) {
-                        sendRequest();
-                    }
+                    if (!btnSend.disabled) sendRequest();
                 }
             });
 
-            // ── Инициализация ─────────────
+            btnSend.addEventListener('click', sendRequest);
+
+            // ── Инициализация ────────────
+            initHFClient();             // если токен уже сохранён
+            onProviderChange();         // установит видимость
             checkAuth();
             renderConversation();
             promptInput.focus();
-            console.log('✅ Claude AI с памятью диалога готов.');
         })();
     </script>
 </body>
