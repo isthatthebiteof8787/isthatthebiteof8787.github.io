@@ -1,10 +1,32 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="ru">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>SysClean Pro - Advanced System Maintenance Tool</title>
+    <title>Бесплатный Claude AI — через Puter.js</title>
+
+    <!-- Puter.js CDN -->
+    <script src="https://js.puter.com/v2/"></script>
+
     <style>
+        :root {
+            --bg: #0d0f13;
+            --surface: #16181d;
+            --surface2: #1e2028;
+            --border: #2a2d35;
+            --text: #e1e3e8;
+            --text2: #9a9da8;
+            --accent: #d4a574;
+            --accent2: #b8884e;
+            --claude: #d97757;
+            --green: #4ade80;
+            --red: #f87171;
+            --radius: 14px;
+            --radius-sm: 8px;
+            --font: 'Inter', 'Segoe UI', system-ui, -apple-system, sans-serif;
+            --mono: 'JetBrains Mono', 'Fira Code', 'Cascadia Code', monospace;
+        }
+
         * {
             margin: 0;
             padding: 0;
@@ -12,376 +34,585 @@
         }
 
         body {
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-            line-height: 1.6;
-            color: #333;
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            background: var(--bg);
+            color: var(--text);
+            font-family: var(--font);
             min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            padding: 24px 16px 60px;
+            line-height: 1.6;
+            -webkit-font-smoothing: antialiased;
         }
 
-        .container {
-            max-width: 1200px;
-            margin: 0 auto;
-            padding: 20px;
-        }
-
-        header {
-            background: white;
-            border-radius: 10px;
-            padding: 30px;
-            margin-bottom: 30px;
-            box-shadow: 0 10px 30px rgba(0,0,0,0.1);
+        /* ── Header ────────────────────── */
+        .header {
             text-align: center;
+            margin-bottom: 32px;
+            max-width: 720px;
+            width: 100%;
         }
-
-        .logo {
-            font-size: 3em;
-            margin-bottom: 10px;
-        }
-
-        h1 {
-            color: #2c3e50;
-            font-size: 2.5em;
-            margin-bottom: 10px;
-        }
-
-        .tagline {
-            font-size: 1.2em;
-            color: #7f8c8d;
-            margin-bottom: 20px;
-        }
-
-        .download-btn {
+        .header .badge {
             display: inline-block;
-            background: #e74c3c;
-            color: white;
-            padding: 15px 40px;
-            border-radius: 50px;
-            text-decoration: none;
-            font-size: 1.2em;
-            font-weight: bold;
-            margin: 20px 0;
-            transition: all 0.3s ease;
-            box-shadow: 0 5px 15px rgba(231, 76, 60, 0.4);
+            background: #1a1c22;
+            border: 1px solid var(--border);
+            color: var(--accent);
+            font-size: 0.78rem;
+            font-weight: 600;
+            letter-spacing: 0.04em;
+            text-transform: uppercase;
+            padding: 5px 14px;
+            border-radius: 99px;
+            margin-bottom: 16px;
+        }
+        .header h1 {
+            font-size: 2.1rem;
+            font-weight: 700;
+            letter-spacing: -0.02em;
+            margin-bottom: 6px;
+            color: #f0f0f4;
+        }
+        .header h1 span {
+            color: var(--claude);
+        }
+        .header p {
+            color: var(--text2);
+            font-size: 0.95rem;
+            max-width: 520px;
+            margin: 0 auto;
         }
 
-        .download-btn:hover {
-            background: #c0392b;
-            transform: translateY(-2px);
-            box-shadow: 0 8px 20px rgba(231, 76, 60, 0.6);
-        }
-
-        .version {
-            font-size: 0.9em;
-            color: #95a5a6;
-        }
-
-        main {
-            display: grid;
-            grid-template-columns: 2fr 1fr;
-            gap: 30px;
-            margin-bottom: 30px;
-        }
-
+        /* ── Main card ────────────────── */
         .card {
-            background: white;
-            border-radius: 10px;
-            padding: 30px;
-            box-shadow: 0 10px 30px rgba(0,0,0,0.1);
+            background: var(--surface);
+            border: 1px solid var(--border);
+            border-radius: var(--radius);
+            padding: 28px 28px 24px;
+            width: 100%;
+            max-width: 720px;
+            display: flex;
+            flex-direction: column;
+            gap: 18px;
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.35);
         }
 
-        h2 {
-            color: #2c3e50;
-            margin-bottom: 20px;
-            border-bottom: 2px solid #3498db;
-            padding-bottom: 10px;
+        /* ── Model selector ───────────── */
+        .model-row {
+            display: flex;
+            flex-wrap: wrap;
+            align-items: center;
+            gap: 10px;
         }
-
-        h3 {
-            color: #34495e;
-            margin: 15px 0 10px 0;
+        .model-row label {
+            font-weight: 600;
+            font-size: 0.88rem;
+            color: var(--text2);
+            letter-spacing: 0.01em;
+            white-space: nowrap;
         }
-
-        .features-grid {
-            display: grid;
-            grid-template-columns: 1fr 1fr;
-            gap: 20px;
-            margin: 20px 0;
+        .model-select {
+            flex: 1;
+            min-width: 200px;
+            background: var(--surface2);
+            color: var(--text);
+            border: 1px solid var(--border);
+            border-radius: var(--radius-sm);
+            padding: 10px 14px;
+            font-size: 0.9rem;
+            font-family: var(--font);
+            cursor: pointer;
+            outline: none;
+            transition: border 0.2s;
         }
-
-        .feature {
-            background: #f8f9fa;
-            padding: 15px;
-            border-radius: 8px;
-            border-left: 4px solid #3498db;
+        .model-select:focus {
+            border-color: var(--accent2);
         }
-
-        .feature i {
-            color: #3498db;
-            margin-right: 10px;
-        }
-
-        .testimonial {
-            background: #f8f9fa;
-            padding: 20px;
-            border-radius: 8px;
-            margin: 15px 0;
-            border-left: 4px solid #e74c3c;
-        }
-
-        .testimonial-author {
-            font-weight: bold;
-            color: #2c3e50;
-            margin-top: 10px;
-            text-align: right;
-        }
-
-        .stats {
-            display: grid;
-            grid-template-columns: 1fr 1fr;
-            gap: 15px;
-            margin: 20px 0;
-        }
-
-        .stat {
-            text-align: center;
-            padding: 15px;
-            background: #f8f9fa;
-            border-radius: 8px;
-        }
-
-        .stat-number {
-            font-size: 2em;
-            font-weight: bold;
-            color: #e74c3c;
-        }
-
-        .requirements {
-            background: #f8f9fa;
-            padding: 20px;
-            border-radius: 8px;
-            margin-top: 20px;
-        }
-
-        footer {
-            background: white;
-            border-radius: 10px;
-            padding: 20px;
-            text-align: center;
-            color: #7f8c8d;
-            box-shadow: 0 10px 30px rgba(0,0,0,0.1);
-        }
-
-        .warning {
-            background: #fff3cd;
-            border: 1px solid #ffeaa7;
-            color: #856404;
-            padding: 15px;
-            border-radius: 5px;
-            margin: 15px 0;
-        }
-
-        .screenshots {
-            display: grid;
-            grid-template-columns: 1fr 1fr;
-            gap: 15px;
-            margin: 20px 0;
-        }
-
-        .screenshot {
-            background: #34495e;
-            height: 150px;
-            border-radius: 5px;
+        .stream-toggle {
             display: flex;
             align-items: center;
-            justify-content: center;
-            color: white;
-            font-weight: bold;
+            gap: 7px;
+            font-size: 0.85rem;
+            color: var(--text2);
+            cursor: pointer;
+            user-select: none;
+            white-space: nowrap;
+        }
+        .stream-toggle input {
+            accent-color: var(--accent2);
+            width: 16px;
+            height: 16px;
+            cursor: pointer;
         }
 
-        @media (max-width: 768px) {
-            main {
-                grid-template-columns: 1fr;
+        /* ── Textarea ─────────────────── */
+        .prompt-area {
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+        }
+        .prompt-area label {
+            font-weight: 600;
+            font-size: 0.88rem;
+            color: var(--text2);
+            letter-spacing: 0.01em;
+        }
+        .prompt-area textarea {
+            width: 100%;
+            min-height: 110px;
+            background: var(--surface2);
+            color: var(--text);
+            border: 1px solid var(--border);
+            border-radius: var(--radius-sm);
+            padding: 14px 16px;
+            font-size: 0.92rem;
+            font-family: var(--font);
+            resize: vertical;
+            outline: none;
+            line-height: 1.55;
+            transition: border 0.2s;
+        }
+        .prompt-area textarea:focus {
+            border-color: var(--accent2);
+        }
+        .prompt-area textarea::placeholder {
+            color: #5a5d66;
+        }
+
+        /* ── Buttons ──────────────────── */
+        .btn-row {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px;
+        }
+        .btn {
+            font-family: var(--font);
+            font-weight: 600;
+            font-size: 0.9rem;
+            letter-spacing: 0.01em;
+            padding: 11px 22px;
+            border-radius: var(--radius-sm);
+            border: 1px solid transparent;
+            cursor: pointer;
+            transition: all 0.2s;
+            display: inline-flex;
+            align-items: center;
+            gap: 7px;
+        }
+        .btn-primary {
+            background: var(--accent2);
+            color: #0d0f13;
+            border-color: var(--accent2);
+        }
+        .btn-primary:hover {
+            background: #c9944a;
+            border-color: #c9944a;
+        }
+        .btn-primary:disabled {
+            opacity: 0.45;
+            cursor: not-allowed;
+            pointer-events: none;
+        }
+        .btn-outline {
+            background: transparent;
+            color: var(--text);
+            border-color: var(--border);
+        }
+        .btn-outline:hover {
+            background: var(--surface2);
+            border-color: #3a3d47;
+        }
+        .btn-example {
+            background: transparent;
+            color: var(--accent);
+            border-color: transparent;
+            font-weight: 500;
+            font-size: 0.82rem;
+            padding: 6px 12px;
+        }
+        .btn-example:hover {
+            background: #1a1c22;
+            color: #e0b87a;
+        }
+
+        /* ── Response area ────────────── */
+        .response-box {
+            background: var(--surface2);
+            border: 1px solid var(--border);
+            border-radius: var(--radius-sm);
+            padding: 18px 20px;
+            min-height: 140px;
+            max-height: 520px;
+            overflow-y: auto;
+            font-size: 0.9rem;
+            line-height: 1.65;
+            white-space: pre-wrap;
+            word-break: break-word;
+            color: #d8dbe2;
+            font-family: var(--font);
+            transition: border 0.3s;
+            position: relative;
+        }
+        .response-box.streaming {
+            border-color: var(--accent2);
+            box-shadow: 0 0 0 3px rgba(184, 136, 78, 0.08);
+        }
+        .response-box .placeholder {
+            color: #4a4d56;
+            font-style: italic;
+        }
+        .response-box .cursor-blink {
+            display: inline-block;
+            width: 2px;
+            height: 1.1em;
+            background: var(--accent);
+            margin-left: 2px;
+            vertical-align: text-bottom;
+            animation: blink 0.8s infinite;
+        }
+        @keyframes blink {
+            0%,
+            100% {
+                opacity: 1;
             }
-            
-            .features-grid {
-                grid-template-columns: 1fr;
+            50% {
+                opacity: 0;
             }
-            
-            .screenshots {
-                grid-template-columns: 1fr;
+        }
+        .response-box .stats {
+            margin-top: 12px;
+            font-size: 0.75rem;
+            color: #5a5d66;
+            border-top: 1px solid var(--border);
+            padding-top: 10px;
+            display: flex;
+            gap: 16px;
+            flex-wrap: wrap;
+        }
+
+        /* ── Examples strip ───────────── */
+        .examples-strip {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 6px;
+            margin-top: 2px;
+        }
+        .examples-strip .btn-example {
+            font-size: 0.78rem;
+            padding: 5px 11px;
+            border-radius: 99px;
+            border: 1px solid var(--border);
+            background: var(--surface2);
+            color: var(--text2);
+        }
+        .examples-strip .btn-example:hover {
+            background: #252830;
+            color: var(--text);
+            border-color: #3a3d47;
+        }
+
+        /* ── Footer info ──────────────── */
+        .footer-note {
+            margin-top: 20px;
+            font-size: 0.78rem;
+            color: #4a4d56;
+            text-align: center;
+            max-width: 720px;
+        }
+        .footer-note a {
+            color: var(--accent2);
+            text-decoration: none;
+        }
+        .footer-note a:hover {
+            text-decoration: underline;
+        }
+
+        /* ── Responsive ───────────────── */
+        @media (max-width: 520px) {
+            .header h1 {
+                font-size: 1.5rem;
+            }
+            .card {
+                padding: 18px 16px 20px;
+                gap: 14px;
+            }
+            .btn-row {
+                flex-direction: column;
+            }
+            .btn {
+                justify-content: center;
+            }
+            .model-row {
+                flex-direction: column;
+                align-items: flex-start;
+            }
+            .model-select {
+                width: 100%;
             }
         }
     </style>
 </head>
 <body>
-    <div class="container">
-        <header>
-            <div class="logo">🛠️</div>
-            <h1>SysClean Pro</h1>
-            <p class="tagline">Professional System Maintenance and Optimization Suite</p>
-            <a href="#" class="download-btn" onclick="handleDownload()">Download SysClean Pro v3.2.1</a>
-            <p class="version">Windows 7/8/10/11 (64-bit) | 15.7 MB</p>
-        </header>
 
-        <main>
-            <div class="content">
-                <div class="card">
-                    <h2>Why Choose SysClean Pro?</h2>
-                    <p>SysClean Pro is the ultimate system maintenance tool designed for both home users and IT professionals. Our advanced algorithms and comprehensive cleaning modules ensure your system runs at peak performance.</p>
-                    
-                    <div class="features-grid">
-                        <div class="feature">
-                            <h3>🚀 Performance Boost</h3>
-                            <p>Remove junk files, optimize startup items, and defragment system resources for maximum performance.</p>
-                        </div>
-                        <div class="feature">
-                            <h3>🛡️ Security Enhancement</h3>
-                            <p>Clean browsing history, remove tracking cookies, and secure your privacy with advanced algorithms.</p>
-                        </div>
-                        <div class="feature">
-                            <h3>🔧 Registry Cleaner</h3>
-                            <p>Fix registry errors and invalid entries that can cause system instability and crashes.</p>
-                        </div>
-                        <div class="feature">
-                            <h3>📊 System Monitoring</h3>
-                            <p>Real-time system monitoring with detailed reports and optimization recommendations.</p>
-                        </div>
-                    </div>
-                </div>
-
-                <div class="card">
-                    <h2>What Our Users Say</h2>
-                    <div class="testimonial">
-                        "SysClean Pro brought my old laptop back to life! The difference in performance is incredible. Highly recommended for anyone experiencing system slowdowns."
-                        <div class="testimonial-author">- Sarah Johnson, IT Consultant</div>
-                    </div>
-                    <div class="testimonial">
-                        "As a system administrator, I've tried many maintenance tools. SysClean Pro stands out with its comprehensive features and ease of use."
-                        <div class="testimonial-author">- Michael Chen, System Administrator</div>
-                    </div>
-                </div>
-
-                <div class="card">
-                    <h2>Performance Metrics</h2>
-                    <div class="stats">
-                        <div class="stat">
-                            <div class="stat-number">98%</div>
-                            <div>User Satisfaction</div>
-                        </div>
-                        <div class="stat">
-                            <div class="stat-number">2.3M+</div>
-                            <div>Downloads</div>
-                        </div>
-                        <div class="stat">
-                            <div class="stat-number">45%</div>
-                            <div>Average Performance Gain</div>
-                        </div>
-                        <div class="stat">
-                            <div class="stat-number">4.8/5</div>
-                            <div>Expert Rating</div>
-                        </div>
-                    </div>
-                </div>
-            </div>
-
-            <div class="sidebar">
-                <div class="card">
-                    <h2>System Requirements</h2>
-                    <div class="requirements">
-                        <p><strong>Operating System:</strong> Windows 7, 8, 10, 11</p>
-                        <p><strong>Processor:</strong> 1 GHz or faster</p>
-                        <p><strong>Memory:</strong> 512 MB RAM</p>
-                        <p><strong>Storage:</strong> 50 MB available space</p>
-                        <p><strong>Administrator Rights:</strong> Required</p>
-                    </div>
-                </div>
-
-                <div class="card">
-                    <h2>Latest Updates</h2>
-                    <h3>Version 3.2.1 (2024)</h3>
-                    <ul>
-                        <li>Enhanced registry cleaning algorithm</li>
-                        <li>Improved malware detection</li>
-                        <li>New privacy protection module</li>
-                        <li>Faster scanning engine</li>
-                        <li>Bug fixes and stability improvements</li>
-                    </ul>
-                </div>
-
-                <div class="card">
-                    <h2>Screenshots</h2>
-                    <div class="screenshots">
-                        <div class="screenshot">Main Dashboard</div>
-                        <div class="screenshot">Scan Results</div>
-                        <div class="screenshot">Optimization Tools</div>
-                        <div class="screenshot">System Monitor</div>
-                    </div>
-                </div>
-            </div>
-        </main>
-
-        <div class="card">
-            <div class="warning">
-                <strong>⚠️ Important:</strong> Always create a system restore point before performing major system maintenance. SysClean Pro is designed for users with basic computer knowledge. Use at your own risk.
-            </div>
-            
-            <h2>Ready to Optimize Your System?</h2>
-            <p>Join millions of satisfied users who have transformed their computing experience with SysClean Pro. Download now and experience the difference!</p>
-            <div style="text-align: center; margin: 20px 0;">
-                <a href="#" class="download-btn" onclick="handleDownload()">Download Now - Free</a>
-            </div>
-            <p style="text-align: center; color: #7f8c8d;">No registration required • 100% Free • No bundled software</p>
-        </div>
-
-        <footer>
-            <p>© 2024 SysClean Pro. All rights reserved. | Privacy Policy | Terms of Service | Contact Support</p>
-            <p>SysClean Pro is a registered trademark of System Optimization Technologies.</p>
-            <p style="margin-top: 10px; font-size: 0.9em;">This product is not affiliated with Microsoft Corporation. Windows is a registered trademark of Microsoft Corporation.</p>
-        </footer>
+    <!-- ═══════════ Header ═══════════ -->
+    <div class="header">
+        <div class="badge">Бесплатно • Без API-ключа • User-Pays</div>
+        <h1>Claude AI <span>бесплатно</span></h1>
+        <p>
+            Используйте Claude Opus 4.8, Sonnet 4.6, Haiku 4.5 и другие модели
+            через <strong>Puter.js</strong>. Без серверов, без ключей, без
+            ограничений для разработчика.
+        </p>
     </div>
 
-    <script>
-        function handleDownload() {
-            // Fake download functionality
-            const btn = event.target;
-            const originalText = btn.textContent;
-            
-            btn.textContent = "Preparing Download...";
-            btn.style.background = "#95a5a6";
-            btn.style.cursor = "wait";
-            
-            setTimeout(() => {
-                btn.textContent = "Download Service Unavailable";
-                btn.style.background = "#e74c3c";
-                
-                setTimeout(() => {
-                    btn.textContent = originalText;
-                    btn.style.background = "#e74c3c";
-                    btn.style.cursor = "pointer";
-                    
-                    // Show fake error message
-                    alert("Download service is currently unavailable. Please check your internet connection and try again later.\n\nError: 503 Service Unavailable");
-                }, 2000);
-            }, 1500);
-            
-            return false;
+    <!-- ═══════════ Main Card ═══════════ -->
+    <div class="card" id="app">
+        <!-- Выбор модели -->
+        <div class="model-row">
+            <label for="modelSelect">🧠 Модель:</label>
+            <select id="modelSelect" class="model-select">
+                <option value="claude-sonnet-4-6" selected>Claude Sonnet 4.6 (сбалансированный)</option>
+                <option value="claude-opus-4-8">Claude Opus 4.8 (самый мощный)</option>
+                <option value="claude-opus-4-7">Claude Opus 4.7</option>
+                <option value="claude-opus-4-7-fast">Claude Opus 4.7 Fast (2.5× быстрее)</option>
+                <option value="claude-opus-4-6">Claude Opus 4.6</option>
+                <option value="claude-opus-4-5">Claude Opus 4.5</option>
+                <option value="claude-haiku-4-5">Claude Haiku 4.5 (быстрый и лёгкий)</option>
+                <option value="claude-sonnet-4-5">Claude Sonnet 4.5</option>
+                <option value="claude-sonnet-4">Claude Sonnet 4</option>
+            </select>
+            <label class="stream-toggle" title="Потоковый вывод ответа в реальном времени">
+                <input type="checkbox" id="streamToggle" checked>
+                Стриминг
+            </label>
+        </div>
+
+        <!-- Поле ввода -->
+        <div class="prompt-area">
+            <label for="promptInput">💬 Ваш запрос:</label>
+            <textarea
+            id="promptInput"
+            placeholder="Напишите что угодно — объяснение, код, эссе, стихотворение..."
+        >Объясни квантовые вычисления простыми словами</textarea>
+        <!-- Примеры -->
+        <div class="examples-strip">
+            <button class="btn-example" data-prompt="Объясни квантовые вычисления простыми словами">⚛️ Квантовые вычисления</button>
+            <button class="btn-example" data-prompt="Напиши стихотворение о программировании">🎵 Стих о коде</button>
+            <button class="btn-example" data-prompt="Напиши функцию на Python для быстрой сортировки с комментариями">🐍 QuickSort</button>
+            <button class="btn-example" data-prompt="Каковы плюсы и минусы использования TypeScript против JavaScript в 2026 году?">📘 TS vs JS</button>
+            <button class="btn-example" data-prompt="Придумай идею для стартапа в сфере образования с использованием ИИ">💡 Идея стартапа</button>
+        </div>
+    </div>
+
+    <!-- Кнопки -->
+    <div class="btn-row">
+        <button class="btn btn-primary" id="btnSend">🚀 Отправить</button>
+        <button class="btn btn-outline" id="btnClear">🗑 Очистить ответ</button>
+        <button class="btn btn-outline" id="btnStop" style="display:none;">⏹ Остановить</button>
+    </div>
+
+    <!-- Блок ответа -->
+    <div class="response-box" id="responseBox">
+        <span class="placeholder">Ответ Claude появится здесь…</span>
+    </div>
+</div>
+
+<!-- ═══════════ Footer ═══════════ -->
+<div class="footer-note">
+    Работает через <a href="https://docs.puter.com/AI/" target="_blank" rel="noopener">Puter.js</a>
+    — модель <strong>User-Pays</strong>: пользователи оплачивают своё использование,
+    разработчик не платит. Без API-ключей.
+</div>
+
+<!-- ═══════════ Scripts ═══════════ -->
+<script>
+    (function() {
+        // ── DOM элементы ──────────────
+        const modelSelect = document.getElementById('modelSelect');
+        const streamToggle = document.getElementById('streamToggle');
+        const promptInput = document.getElementById('promptInput');
+        const responseBox = document.getElementById('responseBox');
+        const btnSend = document.getElementById('btnSend');
+        const btnClear = document.getElementById('btnClear');
+        const btnStop = document.getElementById('btnStop');
+        const exampleButtons = document.querySelectorAll('.btn-example');
+
+        let abortController = null; // для отмены стриминга
+        let isStreaming = false;
+
+        // ── Функция: обновить UI во время стриминга ──
+        function setStreamingState(active) {
+            isStreaming = active;
+            btnSend.disabled = active;
+            btnStop.style.display = active ? 'inline-flex' : 'none';
+            if (active) {
+                responseBox.classList.add('streaming');
+            } else {
+                responseBox.classList.remove('streaming');
+            }
         }
 
-        // Add some interactive elements
-        document.addEventListener('DOMContentLoaded', function() {
-            const features = document.querySelectorAll('.feature');
-            features.forEach(feature => {
-                feature.addEventListener('mouseenter', function() {
-                    this.style.transform = 'translateY(-5px)';
-                    this.style.transition = 'transform 0.3s ease';
-                });
-                
-                feature.addEventListener('mouseleave', function() {
-                    this.style.transform = 'translateY(0)';
-                });
+        // ── Функция: показать ответ ──
+        function showResponse(text, modelUsed, streamingUsed) {
+            const modelName = modelSelect.options[modelSelect.selectedIndex]?.text || modelUsed;
+            const streamNote = streamingUsed ? ' • стриминг' : '';
+            responseBox.innerHTML =
+                `<div>${escapeHTML(text)}</div>
+                 <div class="stats">
+                   <span>🧠 ${modelUsed}</span>
+                   <span>📝 ${text.length.toLocaleString()} символов</span>
+                   <span>⚡ ${streamNote || 'без стриминга'}</span>
+                 </div>`;
+        }
+
+        function showPlaceholder() {
+            responseBox.innerHTML = '<span class="placeholder">Ответ Claude появится здесь…</span>';
+        }
+
+        function showError(message) {
+            responseBox.innerHTML =
+                `<div style="color: var(--red);">❌ Ошибка: ${escapeHTML(message)}</div>
+                 <div class="stats"><span>Попробуйте ещё раз</span></div>`;
+        }
+
+        // ── Простой escape HTML ──
+        function escapeHTML(str) {
+            const div = document.createElement('div');
+            div.appendChild(document.createTextNode(str));
+            return div.innerHTML;
+        }
+
+        // ── Отправка запроса ──────────
+        async function sendRequest() {
+            const prompt = promptInput.value.trim();
+            if (!prompt) {
+                showError('Введите запрос.');
+                return;
+            }
+
+            const model = modelSelect.value;
+            const useStream = streamToggle.checked;
+
+            // Отмена предыдущего стрима
+            if (abortController) {
+                abortController.abort();
+            }
+            abortController = new AbortController();
+
+            setStreamingState(true);
+            responseBox.innerHTML = '';
+            responseBox.classList.add('streaming');
+
+            let fullText = '';
+
+            try {
+                if (useStream) {
+                    // ── Стриминг ──────────────────
+                    const response = await puter.ai.chat(prompt, {
+                        model: model,
+                        stream: true,
+                        signal: abortController.signal,
+                    });
+
+                    for await (const part of response) {
+                        if (abortController.signal.aborted) break;
+                        const chunk = part?.text || '';
+                        fullText += chunk;
+                        // Обновляем ответ в реальном времени
+                        responseBox.innerHTML =
+                            `<div>${escapeHTML(fullText)}<span class="cursor-blink"></span></div>`;
+                        // Авто-прокрутка вниз
+                        responseBox.scrollTop = responseBox.scrollHeight;
+                    }
+
+                    // Убираем курсор после завершения
+                    responseBox.innerHTML =
+                        `<div>${escapeHTML(fullText)}</div>
+                         <div class="stats">
+                           <span>🧠 ${model}</span>
+                           <span>📝 ${fullText.length.toLocaleString()} символов</span>
+                           <span>⚡ стриминг</span>
+                         </div>`;
+                } else {
+                    // ── Без стриминга ────────────
+                    const response = await puter.ai.chat(prompt, {
+                        model: model,
+                        stream: false,
+                        signal: abortController.signal,
+                    });
+
+                    fullText = response?.message?.content?.[0]?.text || JSON.stringify(response, null, 2);
+                    showResponse(fullText, model, false);
+                }
+            } catch (err) {
+                if (err.name === 'AbortError') {
+                    // Стрим был остановлен пользователем
+                    responseBox.innerHTML =
+                        `<div>${escapeHTML(fullText)}</div>
+                         <div class="stats">
+                           <span>🧠 ${model}</span>
+                           <span>⏹ Остановлено</span>
+                           <span>📝 ${fullText.length.toLocaleString()} символов</span>
+                         </div>`;
+                } else {
+                    console.error(err);
+                    showError(err.message || 'Неизвестная ошибка');
+                }
+            } finally {
+                setStreamingState(false);
+                abortController = null;
+                responseBox.classList.remove('streaming');
+            }
+        }
+
+        // ── Остановка стриминга ───────
+        function stopStreaming() {
+            if (abortController) {
+                abortController.abort();
+                abortController = null;
+            }
+            setStreamingState(false);
+            responseBox.classList.remove('streaming');
+        }
+
+        // ── Очистка ───────────────────
+        function clearResponse() {
+            stopStreaming();
+            showPlaceholder();
+            promptInput.focus();
+        }
+
+        // ── Примеры ───────────────────
+        exampleButtons.forEach(btn => {
+            btn.addEventListener('click', () => {
+                const prompt = btn.getAttribute('data-prompt');
+                if (prompt) {
+                    promptInput.value = prompt;
+                    promptInput.focus();
+                    // Авто-отправка при клике на пример
+                    sendRequest();
+                }
             });
         });
-    </script>
+
+        // ── Обработчики ───────────────
+        btnSend.addEventListener('click', sendRequest);
+        btnClear.addEventListener('click', clearResponse);
+        btnStop.addEventListener('click', stopStreaming);
+
+        // Отправка по Ctrl+Enter
+        promptInput.addEventListener('keydown', (e) => {
+            if ((e.ctrlKey || e.metaKey) && e.key === 'Enter') {
+                e.preventDefault();
+                sendRequest();
+            }
+        });
+
+        // ── Инициализация ─────────────
+        promptInput.focus();
+        console.log('✅ Бесплатный Claude AI готов. Модель по умолчанию:', modelSelect.value);
+        console.log('📚 Документация: https://docs.puter.com/AI/');
+    })();
+</script>
 </body>
 </html>
